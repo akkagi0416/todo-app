@@ -121,12 +121,13 @@
     </div>
 
     <script>
-        const API_URL = '/api/todos';
-
-        async function loadTodos() {
-            const response = await fetch(API_URL);
-            const todos = await response.json();
+        function loadTodos() {
+            const todos = JSON.parse(localStorage.getItem('todos') || '[]');
             renderTodos(todos);
+        }
+
+        function saveTodos(todos) {
+            localStorage.setItem('todos', JSON.stringify(todos));
         }
 
         function renderTodos(todos) {
@@ -143,7 +144,7 @@
                         type="checkbox"
                         class="todo-checkbox"
                         ${todo.completed ? 'checked' : ''}
-                        onchange="toggleTodo(${todo.id}, ${!todo.completed})"
+                        onchange="toggleTodo(${todo.id})"
                     />
                     <span class="todo-text">${escapeHtml(todo.text)}</span>
                     <button class="delete-btn" onclick="deleteTodo(${todo.id})">削除</button>
@@ -151,37 +152,39 @@
             `).join('');
         }
 
-        async function addTodo() {
+        function addTodo() {
             const input = document.getElementById('todoInput');
             const text = input.value.trim();
 
             if (!text) return;
 
-            await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text })
-            });
+            const todos = JSON.parse(localStorage.getItem('todos') || '[]');
+            const newTodo = {
+                id: Date.now(),
+                text: text,
+                completed: false
+            };
 
+            todos.push(newTodo);
+            saveTodos(todos);
             input.value = '';
             loadTodos();
         }
 
-        async function toggleTodo(id, completed) {
-            await fetch(`${API_URL}/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ completed })
-            });
-
-            loadTodos();
+        function toggleTodo(id) {
+            const todos = JSON.parse(localStorage.getItem('todos') || '[]');
+            const todo = todos.find(t => t.id === id);
+            if (todo) {
+                todo.completed = !todo.completed;
+                saveTodos(todos);
+                loadTodos();
+            }
         }
 
-        async function deleteTodo(id) {
-            await fetch(`${API_URL}/${id}`, {
-                method: 'DELETE'
-            });
-
+        function deleteTodo(id) {
+            const todos = JSON.parse(localStorage.getItem('todos') || '[]');
+            const filteredTodos = todos.filter(t => t.id !== id);
+            saveTodos(filteredTodos);
             loadTodos();
         }
 
